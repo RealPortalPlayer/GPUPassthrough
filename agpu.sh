@@ -148,7 +148,7 @@ virt-xml "$1" "$FLAGS" --edit --xml ./features/ioapic/@driver=kvm
 echo "Disabling memballoon"
 virt-xml "$1" "$FLAGS" --edit --memballoon model=none
 
-if ! cat "/etc/libvirt/qemu/$1.xml" | grep "<os firmware=\"efi\">" > /dev/null; then
+if ! cat "/etc/libvirt/qemu/$1.xml" | grep -E "<os firmware=('efi'|"efi")>" > /dev/null; then
 	echo "Enabling X-VGA"
 	virt-xml "$1" "$FLAGS" --edit --xml ./@xmlns:qemu=http://libvirt.org/schemas/domain/qemu/1.0 \
 				--xml ./qemu:override/qemu:device/@alias=hostdev0 \

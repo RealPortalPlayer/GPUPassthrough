@@ -36,7 +36,7 @@ virt-xml "$1" -q --edit --xml xpath.delete=./features/kvm
 echo "Reverting IOAPIC driver"
 virt-xml "$1" -q --edit --xml xpath.delete=./features/ioapic
 
-if ! cat "/etc/libvirt/qemu/$1.xml" | grep "<os firmware=\"efi\">" > /dev/null; then
+if ! cat "/etc/libvirt/qemu/$1.xml" | grep -E "<os firmware=('efi'|"efi")>" > /dev/null; then
 	echo "Disabling X-VGA"
 	virt-xml "$1" -q --edit --xml xpath.delete=./qemu:override
 fi

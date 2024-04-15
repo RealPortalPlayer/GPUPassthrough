@@ -45,20 +45,28 @@ echo "Removing virtual display"
 virt-xml "$1" "$FLAGS" --remove-device --video all
 
 echo "Setting CPU topology"
-virt-xml "$1" "$FLAGS" --edit --vcpus sockets=1,dies=1,cores=2,threads=2,maxvcpus=4
+virt-xml "$1" "$FLAGS" --edit --vcpus sockets=1,dies=1,cores=3,threads=2,maxvcpus=6
+
+echo "Enabling Hugepages"
+virt-xml "$1" "$FLAGS" --edit --memorybacking hugepages=on
 
 echo "Pinning CPU cores"
 
 # VCPU CPU CORE
-# 0    0   0   - CORE
-# 1    4   0   - THREAD
-# 2    1   1   - CORE
-# 3    5   1   - THREAD
+# 0    1   1   - CORE
+# 1    5   1   - THREAD
+# 2    2   2   - CORE
+# 3    6   2   - THREAD
+# 4    3   3   - CORE
+# 5    7   3   - THREAD
+# TODO: Final thread might not be needed?
 
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=0\]/@cpuset=0
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=1\]/@cpuset=4
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=2\]/@cpuset=1
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=3\]/@cpuset=5
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=0\]/@cpuset=1
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=1\]/@cpuset=5
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=2\]/@cpuset=2
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=3\]/@cpuset=6
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=4\]/@cpuset=3
+virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=5\]/@cpuset=7
 
 echo "Setting RAM"
 virt-xml "$1" "$FLAGS" --edit --memory 16024

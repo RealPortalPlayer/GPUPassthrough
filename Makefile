@@ -7,6 +7,7 @@ all:
 	cp gt220.rom /etc
 	cp agpu.sh /usr/local/bin/agpu
 	cp rgpu.sh /usr/local/bin/rgpu
+	cp vm-mem-requirements.py3 /etc/libvirt/hooks/vm-mem-requirements 
 	chmod 755 /usr/local/bin/virt-listall
 	chmod 755 /usr/local/bin/virt-listgpu
 	chmod 755 /etc/nvidia.rom

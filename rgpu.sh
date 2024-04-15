@@ -12,6 +12,12 @@ fi
 echo "Reverting CPU topology"
 virt-xml "$1" -q --edit --vcpus sockets=1,dies=1,cores=1,threads=1,maxvcpus=1
 
+echo "Disabling Hugepages"
+virt-xml "$1" -q --edit --memorybacking hugepages=off
+
+echo "Reverting CPU pinning"
+virt-xml "$1" -q --edit --xml xpath.delete=./cputune
+
 echo "Reverting RAM"
 virt-xml "$1" -q --edit --memory 4024
 

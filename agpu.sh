@@ -24,6 +24,14 @@ if /usr/local/bin/virt-listgpu "$1" > /dev/null; then
 	exit 1
 fi
 
+if cat "/etc/libvirt/qemu/$1.xml" | grep "machine='pc-i440fx-" > /dev/null; then
+	echo "Warning, i440fx does not support PCI, please use q35"
+fi
+
+if ! cat "/etc/libvirt/qemu/$1.xml" | grep "arch='x86_64'" > /dev/null; then
+	echo "Warning, invalid architecture. Unknown PCI passthrough support, and potential slow emulation negating PCI passthrough benefits"
+fi
+
 echo "Removing virtual discs"
 virt-xml "$1" "$FLAGS" --remove-device --disk device=cdrom
 

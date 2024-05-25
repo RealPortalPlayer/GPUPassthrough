@@ -21,8 +21,8 @@ virt-xml "$1" -q --edit --xml xpath.delete=./cputune
 echo "Reverting RAM"
 virt-xml "$1" -q --edit --memory 4024
 
-echo "Removing virtual serial"
-virt-xml "$1" -q --remove-device --serial all
+echo "Removing virtual input"
+virt-xml "$1" -q --remove-device --input all
 
 echo "Removing host devices"
 virt-xml "$1" -q --remove-device --hostdev all

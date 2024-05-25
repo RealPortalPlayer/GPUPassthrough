@@ -7,9 +7,16 @@ if [ $# -eq 0 ]; then
 fi
 
 FLAGS="-q"
+BUS="0x01"
+ROM="nvidia.rom"
 
 if [ "$DEBUG" == "1" ]; then
 	FLAGS="-d"
+fi
+
+if [ "$SECOND_GPU" == "1" ]; then
+	BUS="0x05"
+	ROM="gt220.rom"
 fi
 
 if /usr/local/bin/virt-listgpu "$1" > /dev/null; then
@@ -47,47 +54,55 @@ virt-xml "$1" "$FLAGS" --remove-device --video all
 echo "Setting CPU topology"
 virt-xml "$1" "$FLAGS" --edit --vcpus sockets=1,dies=1,cores=3,threads=2,maxvcpus=6
 
-echo "Enabling Hugepages"
-virt-xml "$1" "$FLAGS" --edit --memorybacking hugepages=on
+if [ "$SECOND_GPU" != "1" ]; then
+	echo "Enabling Hugepages"
+	virt-xml "$1" "$FLAGS" --edit --memorybacking hugepages=on
 
-echo "Pinning CPU cores"
+	echo "Pinning CPU cores"
 
-# VCPU CPU CORE
-# 0    1   1   - CORE
-# 1    5   1   - THREAD
-# 2    2   2   - CORE
-# 3    6   2   - THREAD
-# 4    3   3   - CORE
-# 5    7   3   - THREAD
-# TODO: Final thread might not be needed?
+	# VCPU CPU CORE
+	# 0    1   1   - CORE
+	# 1    5   1   - THREAD
+	# 2    2   2   - CORE
+	# 3    6   2   - THREAD
+	# 4    3   3   - CORE
+	# 5    7   3   - THREAD
+	# TODO: Final thread might not be needed?
 
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=0\]/@cpuset=1
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=1\]/@cpuset=5
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=2\]/@cpuset=2
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=3\]/@cpuset=6
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=4\]/@cpuset=3
-virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=5\]/@cpuset=7
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=0\]/@cpuset=1
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=1\]/@cpuset=5
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=2\]/@cpuset=2
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=3\]/@cpuset=6
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=4\]/@cpuset=3
+	virt-xml "$1" "$FLAGS" --edit --xml ./cputune/vcpupin\[@vcpu=5\]/@cpuset=7
+fi
 
 echo "Setting RAM"
 virt-xml "$1" "$FLAGS" --edit --memory 16024
 
-echo "Passing PS/2 keyboard"
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/serial\[1\]/@type=dev \
-			--xml 	./devices/serial\[1\]/source/@path=/dev/input/by-path/platform-i8042-serio-0-event-kbd
+if [ "$SECOND_GPU" == "1" ]; then
+	echo "Passing PS/2 keyboard"
+	virt-xml "$1" "$FLAGS" --add-device --input type="evdev",source.dev=/dev/input/by-path/platform-i8042-serio-0-event-kbd,source.grab="all",source.repeat="on",source.grabToggle="ctrl-ctrl"
 
-echo "Passing PS/2 mouse"
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/serial\[2\]/@type="dev" \
-			--xml 	./devices/serial\[2\]/source/@path=/dev/input/by-path/platform-i8042-serio-1-event-mouse \
-			--xml	./devices/serial\[2\]/source/target/@port=1
+	echo "Passing PS/2 mouse"
+	virt-xml "$1" "$FLAGS" --add-device --input type="evdev",source.dev=/dev/input/by-path/platform-i8042-serio-1-event-mouse
+else
+	echo "Passing PS/2 keyboard"
+	virt-xml "$1" "$FLAGS" --add-device --input type="keyboard",bus="$INPUT_BUS",address.type="pci",address.domain="0x0000",address.bus="0x00",address.slot="0x0f",address.function="0x0"
+	
+	echo "Passing PS/2 mouse"
+	virt-xml "$1" "$FLAGS" --add-device --input type="mouse",bus="$INPUT_BUS",address.type="pci",address.domain="0x0000",address.bus="0x00",address.slot="0x0e",address.function="0x0"
+fi
+
 echo "Passing GPU"
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[1\]/@mode=subsystem/@type=pci \
-			--xml 	./devices/hostdev\[1\]/source/address/@bus=0x01 \
+			--xml 	./devices/hostdev\[1\]/source/address/@bus=$BUS \
 			--xml ./devices/hostdev\[1\]/rom/@file="$TEMPORARY_ROM_PATH" \
 			--xml ./devices/hostdev\[1\]/address/@type=pci
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[1\]/@managed=yes
 
 echo "Fixing ROM path"
-sed -i "s/$TEMPORARY_ROM_PATH/\/etc\/nvidia.rom/" "/etc/libvirt/qemu/$1.xml"
+sed -i "s/$TEMPORARY_ROM_PATH/\/etc\/$ROM/" "/etc/libvirt/qemu/$1.xml"
 
 echo "Reloading modified XML file"
 sudo virsh "$FLAGS" define "/etc/libvirt/qemu/$1.xml"
@@ -97,7 +112,7 @@ virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[2\]/@mode=subsystem/@type
 			--xml 	./devices/hostdev\[2\]/source/address/@function=0x01 \
 			--xml ./devices/hostdev\[2\]/address/@type=pci
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[2\]/@managed=yes
-virt-xml "$1" "$FLAGS" --edit --xml 	./devices/hostdev\[2\]/source/address/@bus=0x01
+virt-xml "$1" "$FLAGS" --edit --xml 	./devices/hostdev\[2\]/source/address/@bus=$BUS
 
 echo "Passing USB"
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[3\]/@mode=subsystem/@type=pci \
@@ -148,11 +163,26 @@ virt-xml "$1" "$FLAGS" --edit --xml ./features/ioapic/@driver=kvm
 echo "Disabling memballoon"
 virt-xml "$1" "$FLAGS" --edit --memballoon model=none
 
-if ! cat "/etc/libvirt/qemu/$1.xml" | grep -E "<os firmware=('efi'|"efi")>" > /dev/null; then
+if ! cat "/etc/libvirt/qemu/$1.xml" | grep -E "<os firmware=('efi'|\"efi\")>" > /dev/null; then
 	echo "Enabling X-VGA"
 	virt-xml "$1" "$FLAGS" --edit --xml ./@xmlns:qemu=http://libvirt.org/schemas/domain/qemu/1.0 \
 				--xml ./qemu:override/qemu:device/@alias=hostdev0 \
 				--xml ./qemu:override/qemu:device/qemu:frontend/qemu:property/@name=x-vga \
 				--xml ./qemu:override/qemu:device/qemu:frontend/qemu:property/@type=bool \
 				--xml ./qemu:override/qemu:device/qemu:frontend/qemu:property/@value=true
+fi
+
+if [ "$SECOND_GPU" == "1" ]; then
+	echo "Adding headless display"
+	virt-xml "$1" "$FLAGS" --add-device --video model.type="none" 
+
+	echo "Passing VM audio to PipeWire"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@id="1"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@type="pipewire"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@runtimeDir="/run/user/1000"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/input/@name="$1input"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/output/@name="$1output"
+
+	echo "Setting audio to AC97"
+	virt-xml "$1" "$FLAGS" --add-device --sound model="ac97"
 fi

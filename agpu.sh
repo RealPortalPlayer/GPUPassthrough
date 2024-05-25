@@ -185,11 +185,11 @@ if [ "$SECOND_GPU" == "1" ]; then
 	virt-xml "$1" "$FLAGS" --add-device --video model.type="none" 
 
 	echo "Passing VM audio to PipeWire"
-	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@id="1" \
-				-xml ./devices/audio/@type="pipewire" \
-				--xml ./devices/audio/@runtimeDir="/run/user/1000" \
-					--xml ./devices/audio/input/@name="$1input" \
-					--xml ./devices/audio/output/@name="$1output"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@id="1"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@type="pipewire"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/@runtimeDir="/run/user/1000"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/input/@name="$1input"
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/audio/output/@name="$1output"
 
 	echo "Setting audio to AC97"
 	virt-xml "$1" "$FLAGS" --add-device --sound model="ac97"

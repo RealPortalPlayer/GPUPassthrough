@@ -122,7 +122,7 @@ virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[2\]/@mode=subsystem/@type
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[2\]/@managed=yes
 virt-xml "$1" "$FLAGS" --edit --xml 	./devices/hostdev\[2\]/source/address/@bus=$BUS
 
-echo "Passing USB"
+echo "Passing other PCI"
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[3\]/@mode=subsystem/@type=pci \
 			--xml 	./devices/hostdev\[3\]/source/address/@slot=0x14 \
 			--xml ./devices/hostdev\[3\]/address/@type=pci

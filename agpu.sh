@@ -133,30 +133,40 @@ virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[4\]/@mode=subsystem/@type
 			--xml ./devices/hostdev\[4\]/address/@type=pci
 virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[4\]/@managed=yes
 
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[5\]/@mode=subsystem/@type=pci \
-			--xml 	./devices/hostdev\[5\]/source/address/@slot=0x1b \
-			--xml ./devices/hostdev\[5\]/address/@type=pci
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[5\]/@managed=yes
+FIRST="5"
+SECOND="6"
+THIRD="7"
 
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[6\]/@mode=subsystem/@type=pci \
-			--xml 	./devices/hostdev\[6\]/source/address/@slot=0x1d \
-			--xml ./devices/hostdev\[6\]/address/@type=pci
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[6\]/@managed=yes
+if [ "$SECOND_GPU" != "1" ]; then
+	FIRST="6"
+	SECOND="7"
+	THIRD="8"
+
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[5\]/@mode=subsystem/@type=pci \
+				--xml 	./devices/hostdev\[5\]/source/address/@slot=0x1b \
+				--xml ./devices/hostdev\[5\]/address/@type=pci
+	virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[5\]/@managed=yes
+fi
+
+virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[$FIRST\]/@mode=subsystem/@type=pci \
+			--xml 	./devices/hostdev\[$FIRST\]/source/address/@slot=0x1d \
+			--xml ./devices/hostdev\[$FIRST\]/address/@type=pci
+virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[$FIRST\]/@managed=yes
 
 echo "Passing disk drives"
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[7\]/@mode=subsystem/@type=scsi \
-			--xml 	./devices/hostdev\[7\]/source/adapter/@name=scsi_host2 \
-			--xml 	./devices/hostdev\[7\]/source/address/@bus=0 \
-			--xml 	./devices/hostdev\[7\]/source/address/@target=0 \
-			--xml 	./devices/hostdev\[7\]/source/address/@unit=0 \
-			--xml ./devices/hostdev\[7\]/address/@type=drive
+virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[$SECOND\]/@mode=subsystem/@type=scsi \
+			--xml 	./devices/hostdev\[$SECOND\]/source/adapter/@name=scsi_host2 \
+			--xml 	./devices/hostdev\[$SECOND\]/source/address/@bus=0 \
+			--xml 	./devices/hostdev\[$SECOND\]/source/address/@target=0 \
+			--xml 	./devices/hostdev\[$SECOND\]/source/address/@unit=0 \
+			--xml ./devices/hostdev\[$SECOND\]/address/@type=drive
 
-virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[8\]/@mode=subsystem/@type=scsi \
-			--xml 	./devices/hostdev\[8\]/source/adapter/@name=scsi_host3 \
-			--xml 	./devices/hostdev\[8\]/source/address/@bus=0 \
-			--xml 	./devices/hostdev\[8\]/source/address/@target=0 \
-			--xml 	./devices/hostdev\[8\]/source/address/@unit=0 \
-			--xml ./devices/hostdev\[8\]/address\[@type="drive"\]/@unit=1
+virt-xml "$1" "$FLAGS" --edit --xml ./devices/hostdev\[$THIRD\]/@mode=subsystem/@type=scsi \
+			--xml 	./devices/hostdev\[$THIRD\]/source/adapter/@name=scsi_host3 \
+			--xml 	./devices/hostdev\[$THIRD\]/source/address/@bus=0 \
+			--xml 	./devices/hostdev\[$THIRD\]/source/address/@target=0 \
+			--xml 	./devices/hostdev\[$THIRD\]/source/address/@unit=0 \
+			--xml ./devices/hostdev\[$THIRD\]/address\[@type="drive"\]/@unit=1
 
 echo "Changing Hyper-V ID"
 virt-xml "$1" "$FLAGS" --edit --xml ./features/hyperv/vendor_id/@state=on \
